@@ -1,5 +1,5 @@
 use chrono::offset;
-use chrono::{DateTime, FixedOffset, Local, Utc};
+use chrono::{DateTime, FixedOffset, Local, SecondsFormat, Utc};
 
 fn main() {
     _basic();
@@ -19,6 +19,14 @@ fn _basic() {
     println!("fixed_sp:   {}", fixed_sp.to_rfc3339());
     println!("utc_now:    {}", utc_now.to_rfc3339());
     println!("fixed_now:  {}", fixed_now.to_rfc3339());
+    println!(
+        "fixed_now:  {}",
+        fixed_now.to_rfc3339_opts(SecondsFormat::Secs, true)
+    );
+    println!(
+        "fixed_now:  {}",
+        fixed_now.to_rfc3339_opts(SecondsFormat::Secs, false)
+    );
 }
 
 fn _geral() {
