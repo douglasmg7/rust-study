@@ -8,7 +8,7 @@ fn main() {
 
 fn _basic() {
     let fixed_zero: DateTime<offset::FixedOffset> =
-        DateTime::parse_from_rfc3339("0000-01-10T00:00:00-00:00").unwrap();
+        DateTime::parse_from_rfc3339("0001-01-01T00:00:00-00:00").unwrap();
     let fixed_sp = fixed_zero.with_timezone(&FixedOffset::west(3 * 3600));
 
     let utc_now = Utc::now();
