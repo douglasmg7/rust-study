@@ -11,4 +11,8 @@ fn main() {
     let (_, y, z) = tup;
     println!("The value of y is {}", y);
     println!("The value of z is {}", z);
+
+    // Unit tuple, retunr implicit by function that is supposed to remove nothing.
+    let unit: () = ();
+    println!("The unit tuple: {:?}", unit);
 }
