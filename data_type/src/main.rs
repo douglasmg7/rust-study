@@ -1,3 +1,5 @@
+use std::mem;
+
 fn main() {
     let i: i16 = 3;
     // Can define data type at end too.
@@ -17,4 +19,25 @@ fn main() {
     // Raw string.
     let s2: &str = r"c:\files\internals";
     println!("{s2}");
+
+    // Char - 4bytes.
+    let c1: char = 'S';
+    println!("{c1}");
+    println!("{}", c1.is_alphabetic());
+    println!("{}", mem::size_of::<char>());
+
+    // Arrray.
+    let a1: [i32; 3] = [1, 2, 3];
+    let a2 = [4, 5, 6];
+    println!("a1: {}", a1[0]);
+    // Using debug trait, array do not implement de display trait.
+    println!("a1: {:?}", a1);
+    println!("a1: {a1:?}");
+    // Pretty print debug.
+    println!("a1: {a1:#?}");
+    println!("a2: {}", a2[2]);
+    println!("a1 length: {}", a1.len());
+
+    // Debug macro:
+    dbg!(a1.len());
 }
