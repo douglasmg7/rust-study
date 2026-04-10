@@ -1,4 +1,18 @@
 fn main() {
+    let mut i = 0;
+    loop {
+        i += 1;
+        if i % 2 == 0 {
+            println!("{i}")
+        } else {
+            continue;
+        };
+        println!("Test break");
+        if i > 4 {
+            break;
+        }
+    }
+
     let mut count = 0;
     'counting_up: loop {
         println!("count = {count}");
