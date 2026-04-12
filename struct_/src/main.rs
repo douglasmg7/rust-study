@@ -5,6 +5,7 @@ struct User {
     active: bool,
 }
 
+#[derive(Debug)] // Create debug trait.
 struct Coffee {
     name: String,
     price: f64,
@@ -34,6 +35,8 @@ fn main() {
         price: 4.59,
         is_hot: true,
     };
+    println!("_mocha debug trait: {:?}", _mocha);
+    println!("_mocha debug trait pretty: {:#?}", _mocha);
 
     let mocha = make_coffee(String::from("Mocha"), 34.5, true);
     println!(
