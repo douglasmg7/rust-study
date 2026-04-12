@@ -5,6 +5,12 @@ struct User {
     active: bool,
 }
 
+struct Coffee {
+    name: String,
+    price: f64,
+    is_hot: bool,
+}
+
 fn main() {
     let user1 = User {
         email: String::from("someone@example.com"),
@@ -22,4 +28,35 @@ fn main() {
     println!("email: {email}");
     // println!("{}", user1.email);     Not valid anymore.
     println!("{}", user1.username);
+
+    let _mocha = Coffee {
+        name: String::from("Mocha"),
+        price: 4.59,
+        is_hot: true,
+    };
+
+    let mocha = make_coffee(String::from("Mocha"), 34.5, true);
+    println!(
+        "Coffee name: {}, price {}, is_hot {}",
+        mocha.name, mocha.price, mocha.is_hot
+    );
+
+    // Using mocha coffee to set some fields.
+    let caramel_mocha = Coffee {
+        name: String::from("Caramel mocha"),
+        ..mocha
+    };
+    println!(
+        "Coffee name: {}, price {}, is_hot {}",
+        caramel_mocha.name, caramel_mocha.price, caramel_mocha.is_hot
+    );
+}
+
+// Create coffe.
+fn make_coffee(name: String, price: f64, is_hot: bool) -> Coffee {
+    Coffee {
+        name,
+        price,
+        is_hot,
+    }
 }
