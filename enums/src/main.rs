@@ -19,6 +19,7 @@ enum CardSuit {
 enum PaymentMethodType {
     CreditCard(String, u32),
     DebitCard(String),
+    // Struct variant.
     PayPal { username: String, password: String },
 }
 
