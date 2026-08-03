@@ -19,6 +19,7 @@ struct TreasureChest<T> {
     treasure: T,
 }
 
+// Specific implemantation for a concrate type (String)
 #[allow(dead_code)]
 impl TreasureChest<String> {
     fn clean_treasure(&mut self) {
@@ -26,10 +27,18 @@ impl TreasureChest<String> {
     }
 }
 
+// Specific implemantation for a concrate type (slice)
 #[allow(dead_code)]
 impl TreasureChest<[&str; 3]> {
     fn amount_of_treasure(&self) -> usize {
         self.treasure.len()
+    }
+}
+
+// Geral implemantation, no concrate type specified
+impl<T> TreasureChest<T> {
+    fn capital_captain(&self) -> String {
+        self.captain.to_uppercase()
     }
 }
 
@@ -56,6 +65,8 @@ fn main() {
     };
 
     println!("golden_chest: {:?}", golden_chest);
+    println!("Capital case name: {}", golden_chest.capital_captain());
     println!("special_chest: {:?}", special_chest);
-    print!("Treasure quantity: {}", special_chest.amount_of_treasure());
+    println!("Treasure quantity: {}", special_chest.amount_of_treasure());
+    println!("Capital case name: {}", special_chest.capital_captain());
 }
