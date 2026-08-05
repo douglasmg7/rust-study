@@ -1,8 +1,8 @@
 fn main() {
     let mut some_value: Option<&str>;
 
-    some_value = Option::None;
-    //some_value = Option::Some("Ha!");
+    some_value = None;
+    //some_value = Some("Ha!");
 
     match some_value {
         Some(val) => println!("Some value: {}", val),
@@ -10,6 +10,10 @@ fn main() {
     }
 
     //println!("Some value unwrapped: {}", some_value.unwrap());
+    println!(
+        "Some value unwrapped: {}",
+        some_value.unwrap_or("Nothing here - unwrap_or")
+    );
     println!(
         "Some value unwrapped: {}",
         some_value.expect("No value found.")
