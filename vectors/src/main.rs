@@ -31,5 +31,39 @@ fn main() {
 
     // Using get().
     let second_car = cars.get(1).unwrap();
-    println!("Second car: {second_car}")
+    println!("Second car: {second_car}");
+
+    // Change the name of the first car.
+    // Must be mut ref to not take ownership.
+    let first_car = &mut cars[0];
+    first_car.push_str(" tunned");
+
+    // All cars.
+    println!("cars: {cars:?}");
+    println!(
+        "cars vector, len: {}, capacity: {}",
+        cars.len(),
+        cars.capacity()
+    );
+
+    // Vector with initial capacity specified.
+    let mut icecreams = Vec::<String>::with_capacity(2);
+    println!(
+        "icecreams vector, len: {}, capacity: {}",
+        icecreams.len(),
+        icecreams.capacity()
+    );
+    println!("icecreams address: {:p}", &icecreams);
+    icecreams.push("Vanilla".to_string());
+    icecreams.push("Chocolat".to_string());
+    println!("icecreams address: {:p}", &icecreams);
+
+    // capacity will change.
+    icecreams.push("Strawberry".to_string());
+    println!(
+        "icecreams vector, len: {}, capacity: {}",
+        icecreams.len(),
+        icecreams.capacity()
+    );
+    println!("icecreams address: {:p}", &icecreams);
 }
