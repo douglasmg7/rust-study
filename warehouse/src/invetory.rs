@@ -1,19 +1,19 @@
-const FLOOR_SPACE: i32 = 10_000;
+pub const FLOOR_SPACE: i32 = 10_000;
 pub const MANAGER: &str = "Ivan Invetory";
 
 #[derive(Debug)]
-enum productCategory {
+pub enum productCategory {
     Ladder,
     Hammer,
 }
 
 #[derive(Debug)]
-struct Item {
-    name: String,
-    category: productCategory,
-    quantity: u32,
+pub struct Item {
+    pub name: String,
+    pub category: productCategory,
+    pub quantity: u32,
 }
 
-fn talk_to_manager() {
+pub fn talk_to_manager() {
     println!("Hey {MANAGER}, how's your coffe?");
 }
