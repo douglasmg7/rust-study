@@ -1,12 +1,11 @@
 [package]
-name = "warehouse"
+name = "external_crates"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-rand = "0.8.5"
+rand = "0.10.2"
 fake = {
-    version = "2.9.2",
+    version = "3.0.0"
     features = ["derive"]
 }
-

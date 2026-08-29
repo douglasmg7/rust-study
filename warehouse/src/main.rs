@@ -1,6 +1,8 @@
 mod invetory;
 mod orders;
 
+use fake::{Fake, Faker};
+
 use invetory::products::productCategory::{Hammer, Ladder};
 use invetory::products::{self, Item};
 use invetory::MANAGER as INVENTORY_MANAGER;
@@ -14,13 +16,19 @@ fn main() {
         invetory::FLOOR_SPACE
     );
 
-    invetory::talk_to_manager();
+    //invetory::talk_to_manager();
+    //
+    //let favorite_category = Ladder;
+    //let other_category = Hammer;
+    //println!("Other category: {:?}", other_category);
+    //
+    //let tall_ladder = Item::new(String::from("Ladder-o-matic 200"), favorite_category, 100);
+    //
+    //println!("{:#?}", tall_ladder);
 
-    let favorite_category = Ladder;
-    let other_category = Hammer;
-    println!("Other category: {:?}", other_category);
+    let fake_item: Item = Faker.fake();
+    println!("{:#?}", fake_item);
 
-    let tall_ladder = Item::new(String::from("Ladder-o-matic 200"), favorite_category, 100);
-
-    println!("{:#?}", tall_ladder);
+    let random_category: products::productCategory = Faker.fake();
+    println!("{:#?}", random_category);
 }
