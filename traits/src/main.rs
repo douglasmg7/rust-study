@@ -1,7 +1,11 @@
 use std::collections::HashMap;
 
 trait Accommodation {
-    fn get_description(&self) -> String;
+    // A default method defined.
+    fn get_description(&self) -> String {
+        String::from("A wonderfull place to stay.")
+    }
+    // Need a explict implementation.
     fn book(&mut self, name: &str, nights: u32);
 }
 
@@ -18,12 +22,18 @@ impl Hotel {
             reservations: HashMap::new(),
         }
     }
+
+    fn summarize(&self) -> String {
+        // Will use default method from the trait Accommodation.
+        format!("{}: {}", self.name, self.get_description())
+    }
 }
 
 impl Accommodation for Hotel {
-    fn get_description(&self) -> String {
-        format!("{} is the pinnacle of luxury", self.name)
-    }
+    //fn get_description(&self) -> String {
+    //    format!("{} is the pinnacle of luxury", self.name)
+    //}
+
     fn book(&mut self, name: &str, nights: u32) {
         self.reservations.insert(name.to_string(), nights);
     }
@@ -54,14 +64,20 @@ impl Accommodation for AirBnB {
     }
 }
 
+fn book_for_one_night(entity: &mut impl Accommodation, guest: &str) {
+    entity.book(guest, 1);
+}
+
 fn main() {
     let mut hotel = Hotel::new("The Luxe");
-    println!("{}", hotel.get_description());
+    println!("{}", hotel.summarize());
     hotel.book("Lúcia", 3);
+    book_for_one_night(&mut hotel, "Marcos");
     println!("{:#?}", hotel);
 
     let mut airbnb = AirBnB::new("Peter");
     println!("{}", airbnb.get_description());
     airbnb.book("Marcos", 4);
+    book_for_one_night(&mut airbnb, "Júlia");
     println!("{:#?}", airbnb);
 }
