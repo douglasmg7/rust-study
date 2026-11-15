@@ -5,7 +5,7 @@ resolver = "2"
 # commit: `cargo run -p module-NN-name` then works for that module too.
 members = [
     "module-01-intro",
-    # "module-02-rust-http-essentials",
+    "module-02-rust-http-essentials",
     # "module-03-handlers-responses",
     # "module-04-routing",
     # "module-05-extractors",
@@ -121,6 +121,9 @@ chrono = { version = "0.4", default-features = false, features = ["serde", "cloc
 # longer needs this crate, but an object-safe async repository trait still does
 # until async fn in traits becomes dyn-compatible.
 async-trait = "0.1"
+
+rand = "0.10" # Note: Use random_bool in 0.9+, or gen_bool in 0.8
+
 
 # --- Build profiles for Module 40 (performance) ---
 # Custom profiles do NOT change `cargo build` / `cargo build --release`; you opt in with
