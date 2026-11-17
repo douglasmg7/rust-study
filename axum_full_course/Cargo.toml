@@ -6,7 +6,7 @@ resolver = "2"
 members = [
     "module-01-intro",
     "module-02-rust-http-essentials",
-    # "module-03-handlers-responses",
+    "module-03-handlers-responses",
     # "module-04-routing",
     # "module-05-extractors",
     # "module-06-responses",
@@ -122,8 +122,7 @@ chrono = { version = "0.4", default-features = false, features = ["serde", "cloc
 # until async fn in traits becomes dyn-compatible.
 async-trait = "0.1"
 
-rand = "0.10" # Note: Use random_bool in 0.9+, or gen_bool in 0.8
-
+rand = "0.10"
 
 # --- Build profiles for Module 40 (performance) ---
 # Custom profiles do NOT change `cargo build` / `cargo build --release`; you opt in with
