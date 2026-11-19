@@ -5,3 +5,8 @@ t
 play
 .zed/
 rustlings/
+
+
+# Added by cargo
+
+/target
