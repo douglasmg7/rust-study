@@ -126,6 +126,7 @@ async fn main() {
             "/items/{item}",
             post(create_item).get(read_item).delete(delete_item),
         )
+        .route("/items/count", get(count_items))
         // Two path params in one row (id and new name): Lesson 2 material.
         .route("/items/{item}/{name}", put(rename_item))
         // ---- Lesson 2: wildcards --------------------------------------
@@ -207,6 +208,14 @@ async fn list_items() -> String {
         .map(|(id, name)| format!("{id}: {name}"))
         .collect();
     format!("items now: [{}]", pairs.join(", "))
+}
+
+async fn count_items() -> String {
+    item_store()
+        .lock()
+        .expect("store lock is fine")
+        .len()
+        .to_string()
 }
 
 /// POST /items/{name} — the create row (201 with the new id).
