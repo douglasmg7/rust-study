@@ -14,3 +14,6 @@ tokio = { workspace = true }
 serde = { workspace = true }
 # The JSON writer used by `axum::response::Json` behind the scenes.
 serde_json = { workspace = true }
+
+[lints]
+workspace = true

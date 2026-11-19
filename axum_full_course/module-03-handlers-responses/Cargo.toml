@@ -13,3 +13,6 @@ tokio = { workspace = true }
 serde = { workspace = true }
 # JSON serializer used by axum::Json.
 serde_json = { workspace = true }
+
+[lints]
+workspace = true
