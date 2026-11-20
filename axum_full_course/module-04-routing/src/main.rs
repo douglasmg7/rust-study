@@ -35,13 +35,15 @@ use axum::{
     body::Body,
     extract::{Path, Request},
     http::{HeaderValue, Method, StatusCode},
-    response::{Html, IntoResponse, Json, NoContent, Response},
+    response::{Html, IntoResponse, Json, NoContent, Redirect, Response},
     routing::{any, get, on, post, put, MethodFilter},
     Router,
 };
 use axum_extra::routing::RouterExt; // adds `route_with_tsr` to Router
-use std::{collections::HashMap, convert::Infallible, sync::Mutex};
+use std::{collections::HashMap, convert::Infallible, sync::Mutex, sync::OnceLock};
 use tower::service_fn;
+
+static USERS: OnceLock<Mutex<HashMap<u32, String>>> = OnceLock::new();
 
 // ============================================================================
 // LESSON 1: The route table (methods + a live CRUD demo)
@@ -59,13 +61,23 @@ use tower::service_fn;
 /// Module 07 replaces all of this with `State` plumbing, and Module 14 with
 /// a real database pool — the handlers stay identical.
 fn item_store() -> &'static Mutex<HashMap<u32, String>> {
-    static ITEMS: std::sync::OnceLock<Mutex<HashMap<u32, String>>> = std::sync::OnceLock::new();
+    static ITEMS: OnceLock<Mutex<HashMap<u32, String>>> = OnceLock::new();
     ITEMS.get_or_init(|| {
         Mutex::new(HashMap::from([
             (1_u32, "ring".to_string()),
             (2, "amulet".to_string()),
         ]))
     })
+}
+
+// fn user() -> &'static Mutex<HashMap<u32, String>> {
+//     static USERS: OnceLock<Mutex<HashMap<u32, String>>> = OnceLock::new();
+//     USERS.get_or_init(|| Mutex::new(HashMap::from([(1, "Luck".into()), (2, "Han".into())])))
+// }
+//
+
+fn user() -> &'static Mutex<HashMap<u32, String>> {
+    USERS.get_or_init(|| Mutex::new(HashMap::from([(1, "Luck".into()), (2, "Han".into())])))
 }
 
 /// The entry point: this is the biggest `app` of the course so far, and the
@@ -97,6 +109,7 @@ async fn main() {
         .route("/admin/keys", get(admin_keys))
         .reset_fallback();
 
+    let v0_routes = Router::new().route("/hello", get(v0_hello));
     let v1_routes = Router::new().route("/hello", get(v1_hello));
     let v2_routes = Router::new().route("/hello", get(v2_hello));
 
@@ -116,6 +129,14 @@ async fn main() {
         )
         .fallback_service(service_fn(hand_written_service));
 
+    let user_routes = Router::new()
+        .route("/{id}", get(get_user))
+        .fallback(user_unknow);
+
+    let billing_routes = Router::new()
+        .route("/billing", get(billing))
+        .fallback(billing_unknow);
+
     let app = Router::new()
         // ---- Lesson 1: the CRUD table ---------------------------------
         .route("/", get(dashboard))
@@ -132,10 +153,14 @@ async fn main() {
         // ---- Lesson 2: wildcards --------------------------------------
         .route("/files/{*path}", get(wildcard_files))
         // ---- Lesson 3: nesting ----------------------------------------
-        .nest("/api", api_routes)
+        .nest("/api", api_routes.clone())
+        .nest("/v3/api", api_routes)
         // ---- Lesson 4: merging (with reset_fallback above) -------------
         .merge(admin_routes)
+        .merge(billing_routes)
+        .nest("/users", user_routes)
         // ---- Versioning with two nested routers ------------------------
+        .nest("/v0", v0_routes)
         .nest("/v1", v1_routes)
         .nest("/v2", v2_routes)
         // ---- Lesson 6: a router mounted as a service -------------------
@@ -338,6 +363,10 @@ async fn api_version() -> &'static str {
     "api version: 0 — these are the nested test routes\n"
 }
 
+async fn billing() -> &'static str {
+    "Hello from billing api"
+}
+
 /// Fallback of the nested /api router.
 ///
 /// What it does: catches anything under `/api/*` that has no row, and leaves
@@ -353,6 +382,20 @@ async fn api_unknown() -> (StatusCode, Json<serde_json::Value>) {
             "hint": "the nested router owns fallbacks under its prefix",
         })),
     )
+}
+
+async fn user_unknow() -> (StatusCode, Json<serde_json::Value>) {
+    (
+        StatusCode::NOT_FOUND,
+        Json(serde_json::json!({
+            "error": "unknown /usr/* route",
+            "hint": "try /user/1",
+        })),
+    )
+}
+
+async fn billing_unknow() -> (StatusCode, &'static str) {
+    (StatusCode::NOT_FOUND, "Unknow billing api")
 }
 
 // ============================================================================
@@ -375,6 +418,9 @@ async fn admin_keys() -> &'static str {
 // handlers. `nest("/v1", ...)` + `nest("/v2", ...)` is the cheapest version
 // flip in Axum; Module 18 revisits versioning as an API-design decision.
 // ============================================================================
+async fn v0_hello() -> Redirect {
+    Redirect::permanent("/v1/hello")
+}
 
 async fn v1_hello() -> &'static str {
     "v1 hello: plain string responses\n"
@@ -404,6 +450,10 @@ async fn not_found_json() -> (StatusCode, Json<serde_json::Value>) {
         })),
     )
 }
+
+// async fn not_found_json() -> (StatusCode, &'static str) {
+//     (StatusCode::OK, "Hello from depth...")
+// }
 
 /// The method-miss fallback: path has a row, but not for this method.
 ///
@@ -533,4 +583,11 @@ async fn hand_written_service(request: Request) -> Result<Response, Infallible> 
         .headers_mut()
         .insert("x-served-by", HeaderValue::from_static("service_fn"));
     Ok(response)
+}
+
+async fn get_user(Path(id): Path<u32>) -> (StatusCode, String) {
+    match user().lock().expect("user lock is fine").get(&id) {
+        Some(user) => (StatusCode::OK, format!("{id}: {user}")),
+        None => (StatusCode::NOT_FOUND, format!("No user for id {id}")),
+    }
 }
