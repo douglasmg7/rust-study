@@ -48,11 +48,9 @@
 use axum::{
     body::Bytes,
     extract::{
-        rejection::JsonRejection,
-        rejection::{BytesRejection},
-        ConnectInfo, Extension, Form, FromRequest, FromRequestParts, MatchedPath, NestedPath,
-        OptionalFromRequestParts, OriginalUri, Path, Query, RawForm, RawPathParams, RawQuery,
-        Request,
+        rejection::BytesRejection, rejection::JsonRejection, ConnectInfo, Extension, Form,
+        FromRequest, FromRequestParts, MatchedPath, NestedPath, OptionalFromRequestParts,
+        OriginalUri, Path, Query, RawForm, RawPathParams, RawQuery, Request,
     },
     http::{header, request::Parts, HeaderMap, Method, StatusCode, Uri, Version},
     response::{IntoResponse, Json, Response},
@@ -121,6 +119,12 @@ struct OrderLine {
 /// it reads. Everything below demonstrates one argument each.
 #[tokio::main]
 async fn main() {
+    let exercise_router = Router::new()
+        .route("/multiply/{a}/{b}", get(multiply_path))
+        .route("/typed-header-optional", get(option_typed_header_demo))
+        .route("/custom/req-id", get(maybe_request_id))
+        .route("/custom/csv", post(csv_rows_cells));
+
     let app = Router::new()
         .route("/", get(dashboard))
         // ---- Lesson 1: Path -------------------------------------------
@@ -161,9 +165,13 @@ async fn main() {
         .route("/custom/api-key-optional", get(maybe_api_key))
         .route("/custom/lines", post(plain_lines))
         .route("/custom/client", get(client_summary))
+        .merge(exercise_router)
         // Extension values are attached as a layer (Module 07 compares this
         // with State).
-        .layer(Extension(BuildInfo { version: "0.1.0", module: 5 }));
+        .layer(Extension(BuildInfo {
+            version: "0.1.0",
+            module: 5,
+        }));
 
     let port = std::env::var("AXUM_PORT")
         .ok()
@@ -249,7 +257,15 @@ async fn nested_params(Path((user_id, post_id)): Path<(u32, u32)>) -> String {
     format!("Path<(u32, u32)> extracted: user_id = {user_id}, post_id = {post_id}\n")
 }
 
+async fn multiply_path(Path((a, b)): Path<(u16, u16)>) -> String {
+    match a.checked_mul(b) {
+        Some(result) => format!("{a}*{b} = {result}\n"),
+        None => format!("{a}*{b} overflow\n"),
+    }
+}
+
 // ---------------------------------------------------------------------------
+// app.into_make_service_with_connect_info::<SocketAddr>(),
 // Lesson 2: Query — typed query strings with real optionality
 // ---------------------------------------------------------------------------
 
@@ -491,7 +507,9 @@ struct RepoRef {
 /// What it does: collects EVERY path parameter by name, as strings.
 /// Why it matters: when a route's parameters are dynamic or numerous you do
 /// not need a tuple or struct. No parsing happens — values stay strings.
-async fn all_params_map(Path(params): Path<HashMap<String, String>>) -> Json<HashMap<String, String>> {
+async fn all_params_map(
+    Path(params): Path<HashMap<String, String>>,
+) -> Json<HashMap<String, String>> {
     Json(params)
 }
 
@@ -546,7 +564,11 @@ async fn raw_query(RawQuery(query): RawQuery) -> String {
 /// Why it matters: `Uri` inside a nested router shows the path WITHOUT the
 /// nest prefix; `OriginalUri` (below) shows the full one.
 async fn uri_parts(method: Method, uri: Uri, version: Version) -> String {
-    format!("method = {method}\npath   = {}\nquery  = {:?}\nhttp   = {version:?}\n", uri.path(), uri.query())
+    format!(
+        "method = {method}\npath   = {}\nquery  = {:?}\nhttp   = {version:?}\n",
+        uri.path(),
+        uri.query()
+    )
 }
 
 /// GET /inner/where — `NestedPath` and `OriginalUri` inside a nested router.
@@ -602,12 +624,23 @@ async fn typed_header_demo(TypedHeader(agent): TypedHeader<UserAgent>) -> String
     format!("you are: {}\n", agent.as_str())
 }
 
+async fn option_typed_header_demo(agent: Option<TypedHeader<UserAgent>>) -> String {
+    match agent {
+        Some(TypedHeader(user_agent)) => format!("you are: {}\n", user_agent.as_str()),
+        None => format!("No user-agent defined"),
+    }
+}
+
 /// POST /raw-form — `RawForm`.
 ///
 /// What it does: gives the form body as `Bytes` without deserialising.
 /// Why it matters: signature checks (webhooks) need the exact bytes sent.
 async fn raw_form(RawForm(bytes): RawForm) -> String {
-    format!("raw form body ({} bytes): {}\n", bytes.len(), String::from_utf8_lossy(&bytes))
+    format!(
+        "raw form body ({} bytes): {}\n",
+        bytes.len(),
+        String::from_utf8_lossy(&bytes)
+    )
 }
 
 /// POST /whole-request — the entire `Request`.
@@ -617,8 +650,17 @@ async fn raw_form(RawForm(bytes): RawForm) -> String {
 /// "give me everything" end of the spectrum, used by middleware and proxies.
 async fn whole_request(request: Request) -> String {
     let (parts, body) = request.into_parts();
-    let size = axum::body::to_bytes(body, 1024 * 1024).await.map(|b| b.len()).unwrap_or(0);
-    format!("{} {} with {} header(s) and {} body byte(s)\n", parts.method, parts.uri, parts.headers.len(), size)
+    let size = axum::body::to_bytes(body, 1024 * 1024)
+        .await
+        .map(|b| b.len())
+        .unwrap_or(0);
+    format!(
+        "{} {} with {} header(s) and {} body byte(s)\n",
+        parts.method,
+        parts.uri,
+        parts.headers.len(),
+        size
+    )
 }
 
 // ============================================================================
@@ -656,7 +698,10 @@ impl IntoResponse for ApiKeyRejection {
     fn into_response(self) -> Response {
         let (status, message) = match self {
             ApiKeyRejection::Missing => (StatusCode::UNAUTHORIZED, "missing x-api-key header"),
-            ApiKeyRejection::Malformed => (StatusCode::BAD_REQUEST, "x-api-key must look like ak_xxxxxxxx"),
+            ApiKeyRejection::Malformed => (
+                StatusCode::BAD_REQUEST,
+                "x-api-key must look like ak_xxxxxxxx",
+            ),
         };
         (status, Json(serde_json::json!({ "error": message }))).into_response()
     }
@@ -700,9 +745,14 @@ where
 {
     type Rejection = ApiKeyRejection;
 
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Option<Self>, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &S,
+    ) -> Result<Option<Self>, Self::Rejection> {
         if parts.headers.contains_key("x-api-key") {
-            <ApiKey as FromRequestParts<S>>::from_request_parts(parts, state).await.map(Some)
+            <ApiKey as FromRequestParts<S>>::from_request_parts(parts, state)
+                .await
+                .map(Some)
         } else {
             Ok(None)
         }
@@ -722,6 +772,66 @@ async fn maybe_api_key(key: Option<ApiKey>) -> String {
     }
 }
 
+async fn maybe_request_id(id: Option<RequestId>) -> String {
+    match id {
+        Some(RequestId(id)) => format!("id: {id}\n"),
+        None => format!("new id: {}\n", rand::random::<u64>()),
+    }
+}
+
+struct RequestId(String);
+
+enum RequestIdRejection {
+    MalFormed,
+    Missing,
+}
+
+impl IntoResponse for RequestIdRejection {
+    fn into_response(self) -> Response {
+        let (status, message) = match self {
+            RequestIdRejection::MalFormed => (StatusCode::BAD_REQUEST, "x-request-id not correct"),
+            RequestIdRejection::Missing => (StatusCode::UNAUTHORIZED, "x-request-id not present"),
+        };
+        (status, Json(serde_json::json!({"err":message}))).into_response()
+    }
+}
+
+impl<S> FromRequestParts<S> for RequestId
+where
+    S: Send + Sync,
+{
+    type Rejection = RequestIdRejection;
+
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let value = parts
+            .headers
+            .get("x-request-id")
+            .ok_or(RequestIdRejection::Missing)?
+            .to_str()
+            .map_err(|_| RequestIdRejection::MalFormed)?;
+        Ok(RequestId(value.into()))
+    }
+}
+
+impl<S> OptionalFromRequestParts<S> for RequestId
+where
+    S: Send + Sync,
+{
+    type Rejection = RequestIdRejection;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &S,
+    ) -> Result<Option<Self>, Self::Rejection> {
+        if parts.headers.contains_key("x-request-id") {
+            <RequestId as FromRequestParts<S>>::from_request_parts(parts, state)
+                .await
+                .map(Some)
+        } else {
+            Ok(None)
+        }
+    }
+}
 // ---------------------------------------------------------------------------
 // 9b. Custom FromRequest — read the BODY (must be the last argument)
 // ---------------------------------------------------------------------------
@@ -750,7 +860,9 @@ impl IntoResponse for PlainLinesRejection {
                 .into_response(),
             // Reuse the built-in rejection's own status and text.
             PlainLinesRejection::BadBody(rejection) => rejection.into_response(),
-            PlainLinesRejection::NotUtf8 => (StatusCode::BAD_REQUEST, "body is not valid UTF-8\n").into_response(),
+            PlainLinesRejection::NotUtf8 => {
+                (StatusCode::BAD_REQUEST, "body is not valid UTF-8\n").into_response()
+            }
         }
     }
 }
@@ -776,13 +888,78 @@ where
             .map_err(PlainLinesRejection::BadBody)?;
         let text = std::str::from_utf8(&bytes).map_err(|_| PlainLinesRejection::NotUtf8)?;
         Ok(PlainLines(
-            text.lines().map(str::trim).filter(|line| !line.is_empty()).map(String::from).collect(),
+            text.lines()
+                .map(str::trim)
+                .filter(|line| !line.is_empty())
+                .map(String::from)
+                .collect(),
         ))
     }
 }
 
 /// POST /custom/lines — counts the lines of a text/plain body.
 async fn plain_lines(PlainLines(lines): PlainLines) -> Json<serde_json::Value> {
+    Json(serde_json::json!({ "line_count": lines.len(), "lines": lines }))
+}
+
+struct CsvRowsCells(Vec<String>);
+
+/// Everything that can go wrong while building `PlainLines`.
+enum CsvRowsCellsRejection {
+    WrongContentType,
+    BadBody(BytesRejection),
+    NotUtf8,
+}
+
+impl IntoResponse for CsvRowsCellsRejection {
+    fn into_response(self) -> Response {
+        match self {
+            CsvRowsCellsRejection::WrongContentType => (
+                StatusCode::UNSUPPORTED_MEDIA_TYPE,
+                "expected content-type: text/csv\n",
+            )
+                .into_response(),
+            // Reuse the built-in rejection's own status and text.
+            CsvRowsCellsRejection::BadBody(rejection) => rejection.into_response(),
+            CsvRowsCellsRejection::NotUtf8 => {
+                (StatusCode::BAD_REQUEST, "body is not valid UTF-8\n").into_response()
+            }
+        }
+    }
+}
+
+impl<S> FromRequest<S> for CsvRowsCells
+where
+    S: Send + Sync,
+{
+    type Rejection = CsvRowsCellsRejection;
+
+    async fn from_request(request: Request, state: &S) -> Result<Self, Self::Rejection> {
+        let is_text = request
+            .headers()
+            .get(header::CONTENT_TYPE)
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|value| value.starts_with("text/csv"));
+        if !is_text {
+            return Err(CsvRowsCellsRejection::WrongContentType);
+        }
+        // Delegate the actual reading (and the body-size limit) to Bytes.
+        let bytes = Bytes::from_request(request, state)
+            .await
+            .map_err(CsvRowsCellsRejection::BadBody)?;
+        let text = std::str::from_utf8(&bytes).map_err(|_| CsvRowsCellsRejection::NotUtf8)?;
+        Ok(CsvRowsCells(
+            text.lines()
+                .map(str::trim)
+                .filter(|line| !line.is_empty())
+                .map(String::from)
+                .collect(),
+        ))
+    }
+}
+
+/// POST /custom/lines — counts the lines of a text/plain body.
+async fn csv_rows_cells(CsvRowsCells(lines): CsvRowsCells) -> Json<serde_json::Value> {
     Json(serde_json::json!({ "line_count": lines.len(), "lines": lines }))
 }
 
