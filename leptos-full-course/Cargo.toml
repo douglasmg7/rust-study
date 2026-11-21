@@ -1,0 +1,133 @@
+[workspace]
+resolver = "2"
+members = [
+  "module-01-intro",
+  # "module-02-components",
+  # "module-03-reactivity",
+  # "module-04-control-flow",
+  # "module-05-forms",
+  # "module-06-routing",
+  # "module-07-async-resources",
+  # "module-08-server-functions",
+  # "module-09-ssr",
+  # "module-10-database",
+  # "module-11-auth",
+  # "module-12-state-management",
+  # "module-13-styling",
+  # "module-14-animations",
+  # "module-15-testing",
+  # "module-16-wasm-performance",
+  # "module-17-file-uploads",
+  # "module-18-websockets",
+  # "module-19-sse",
+  # "module-20-caching",
+  # "module-21-i18n",
+  # "module-22-js-interop",
+  # "module-23-error-handling",
+  # "module-24-islands",
+  # "module-25-production",
+]
+
+[workspace.dependencies]
+# Core Leptos crates pinned to the Leptos v0.8.22 release set (requires Rust 1.88+).
+leptos = "0.8.22"
+leptos_axum = "0.8.10"
+leptos_meta = "0.8.7"
+leptos_router = "0.8.17"
+
+axum = { version = "0.8", features = ["multipart", "ws"] }
+http = "1"
+# Async runtime and HTTP server stack for SSR modules.
+tokio = { version = "1", features = ["full"] }
+tower = { version = "0.5", features = ["full"] }
+tower-http = { version = "0.6", features = ["compression-gzip", "cors", "fs", "limit", "timeout", "trace"] }
+
+console_error_panic_hook = "0.1"
+js-sys = "0.3"
+# Browser/WASM bindings used by CSR lessons.
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+wasm-bindgen-test = "0.3"
+web-sys = {
+  version = "0.3",
+  features = [
+    "Blob",
+    "CloseEvent",
+    "CustomEvent",
+    "DataTransfer",
+    "Document",
+    "DragEvent",
+    "Element",
+    "Event",
+    "EventSource",
+    "EventTarget",
+    "File",
+    "FileList",
+    "FileReader",
+    "FormData",
+    "HtmlElement",
+    "HtmlFormElement",
+    "HtmlInputElement",
+    "HtmlSelectElement",
+    "HtmlTextAreaElement",
+    "IntersectionObserver",
+    "IntersectionObserverEntry",
+    "KeyboardEvent",
+    "Location",
+    "MessageEvent",
+    "Navigator",
+    "Performance",
+    "ProgressEvent",
+    "Storage",
+    "Url",
+    "WebSocket",
+    "Window",
+    "XmlHttpRequest",
+    "XmlHttpRequestUpload",
+    "console",
+  ]
+}
+
+# Client-side utility crates.
+gloo-events = "0.2"
+gloo-net = { version = "0.6", features = ["http"] }
+gloo-storage = "0.3"
+gloo-timers = { version = "0.3", features = ["futures"] }
+
+chrono = { version = "0.4", features = ["serde"] }
+# Serialization and domain modeling.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["js", "serde", "v4"] }
+
+anyhow = "1"
+argon2 = "0.5"
+dotenvy = "0.15"
+jsonwebtoken = "9"
+# Database, auth, error handling, and observability.
+sqlx = { version = "0.8", features = ["chrono", "macros", "postgres", "runtime-tokio", "uuid"] }
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Streams and async helpers for realtime lessons.
+futures = "0.3"
+futures-util = "0.3"
+tokio-stream = { version = "0.1", features = ["sync"] }
+
+[workspace.lints.cargo]
+unused_dependencies = "allow"
+unused_workspace_dependencies = "allow"
+
+[profile.release]
+opt-level = "z"
+lto = true
+panic = "abort"
+codegen-units = 1
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = true
+panic = "abort"
+codegen-units = 1
