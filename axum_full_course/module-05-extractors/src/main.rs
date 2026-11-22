@@ -123,7 +123,7 @@ async fn main() {
         .route("/multiply/{a}/{b}", get(multiply_path))
         .route("/typed-header-optional", get(option_typed_header_demo))
         .route("/custom/req-id", get(maybe_request_id))
-        .route("/custom/csv", post(csv_rows_cells));
+        .route("/custom/csv", post(csv_boy));
 
     let app = Router::new()
         .route("/", get(dashboard))
@@ -902,37 +902,37 @@ async fn plain_lines(PlainLines(lines): PlainLines) -> Json<serde_json::Value> {
     Json(serde_json::json!({ "line_count": lines.len(), "lines": lines }))
 }
 
-struct CsvRowsCells(Vec<String>);
+struct CsvBody(Vec<Vec<String>>);
 
 /// Everything that can go wrong while building `PlainLines`.
-enum CsvRowsCellsRejection {
+enum CsvBodyRejection {
     WrongContentType,
     BadBody(BytesRejection),
     NotUtf8,
 }
 
-impl IntoResponse for CsvRowsCellsRejection {
+impl IntoResponse for CsvBodyRejection {
     fn into_response(self) -> Response {
         match self {
-            CsvRowsCellsRejection::WrongContentType => (
+            CsvBodyRejection::WrongContentType => (
                 StatusCode::UNSUPPORTED_MEDIA_TYPE,
                 "expected content-type: text/csv\n",
             )
                 .into_response(),
             // Reuse the built-in rejection's own status and text.
-            CsvRowsCellsRejection::BadBody(rejection) => rejection.into_response(),
-            CsvRowsCellsRejection::NotUtf8 => {
+            CsvBodyRejection::BadBody(rejection) => rejection.into_response(),
+            CsvBodyRejection::NotUtf8 => {
                 (StatusCode::BAD_REQUEST, "body is not valid UTF-8\n").into_response()
             }
         }
     }
 }
 
-impl<S> FromRequest<S> for CsvRowsCells
+impl<S> FromRequest<S> for CsvBody
 where
     S: Send + Sync,
 {
-    type Rejection = CsvRowsCellsRejection;
+    type Rejection = CsvBodyRejection;
 
     async fn from_request(request: Request, state: &S) -> Result<Self, Self::Rejection> {
         let is_text = request
@@ -941,26 +941,25 @@ where
             .and_then(|value| value.to_str().ok())
             .is_some_and(|value| value.starts_with("text/csv"));
         if !is_text {
-            return Err(CsvRowsCellsRejection::WrongContentType);
+            return Err(CsvBodyRejection::WrongContentType);
         }
         // Delegate the actual reading (and the body-size limit) to Bytes.
         let bytes = Bytes::from_request(request, state)
             .await
-            .map_err(CsvRowsCellsRejection::BadBody)?;
-        let text = std::str::from_utf8(&bytes).map_err(|_| CsvRowsCellsRejection::NotUtf8)?;
-        Ok(CsvRowsCells(
-            text.lines()
-                .map(str::trim)
-                .filter(|line| !line.is_empty())
-                .map(String::from)
-                .collect(),
-        ))
+            .map_err(CsvBodyRejection::BadBody)?;
+        let text = std::str::from_utf8(&bytes).map_err(|_| CsvBodyRejection::NotUtf8)?;
+
+        let mut table: Vec<Vec<String>> = Vec::new();
+        for line in text.lines().map(str::trim).filter(|line| !line.is_empty()) {
+            table.push(line.split(',').map(str::trim).map(String::from).collect());
+        }
+        Ok(CsvBody(table))
     }
 }
 
 /// POST /custom/lines — counts the lines of a text/plain body.
-async fn csv_rows_cells(CsvRowsCells(lines): CsvRowsCells) -> Json<serde_json::Value> {
-    Json(serde_json::json!({ "line_count": lines.len(), "lines": lines }))
+async fn csv_boy(CsvBody(csv): CsvBody) -> Json<serde_json::Value> {
+    Json(serde_json::json!({ "line_count": csv.len(), "csv": csv }))
 }
 
 // ---------------------------------------------------------------------------

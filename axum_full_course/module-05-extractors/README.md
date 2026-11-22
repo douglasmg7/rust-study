@@ -5,10 +5,10 @@
 - What an extractor is: **any handler argument** that Axum fills from the request
 - The two extractor traits and which one to use:
 
-  | Trait | Gets | Reads the body? | Where it may sit |
-  |-------|------|-----------------|------------------|
-  | `FromRequestParts` | `&mut Parts` + state | no | any argument |
-  | `FromRequest` | the whole `Request` + state | yes | **last** argument only |
+  | Trait              | Gets                        | Reads the body? | Where it may sit       |
+  | ------------------ | --------------------------- | --------------- | ---------------------- |
+  | `FromRequestParts` | `&mut Parts` + state        | no              | any argument           |
+  | `FromRequest`      | the whole `Request` + state | yes             | **last** argument only |
 
 - Every built-in extractor, explained one by one:
   `Path` (single, tuple, struct, `HashMap`), `RawPathParams`, `Query` (struct, `HashMap`),
@@ -36,47 +36,47 @@ This module listens on **http://127.0.0.1:3005** (set `AXUM_PORT` to change it).
 
 ### Lessons 1-7 — the core extractors
 
-| Method | Path | Status | Extractor |
-|--------|------|--------|-----------|
-| GET | `/` | 200 | JSON dashboard of the lessons |
-| GET | `/products/{product_id}` | 200 / 400 | `Path<u32>` |
-| GET | `/users/{user_id}/posts/{post_id}` | 200 / 400 | `Path<(u32, u32)>` |
-| GET | `/search?q=..&page=..&sort=..` | 200 / 400 | `Query<SearchParams>` (required + `Option` fields) |
-| POST | `/users` | 201 / 400 / 415 / 422 | `Json<UserInput>` |
-| POST | `/orders/{order_id}?priority=..` | 200 / 400 / 422 | Order: Path → Query → Json (body last) |
-| POST | `/feedback` | 200 / 415 / 422 | `Form<Feedback>` |
-| GET | `/theme` · `/theme/{name}` | 200 | `Option<Path<String>>` |
-| POST | `/optional-json` | 200 / 400 | `Option<Json<Greeting>>` |
-| POST | `/strict-json` | 200 / 422 | `Result<Json<Greeting>, JsonRejection>` |
-| GET | `/headers` | 200 | `HeaderMap` |
-| POST | `/echo-raw` | 200 | `Bytes` |
-| GET | `/meta/route` | 200 | `MatchedPath` |
-| GET | `/ip` | 200 | `ConnectInfo<SocketAddr>` |
+| Method | Path                               | Status                | Extractor                                          |
+| ------ | ---------------------------------- | --------------------- | -------------------------------------------------- |
+| GET    | `/`                                | 200                   | JSON dashboard of the lessons                      |
+| GET    | `/products/{product_id}`           | 200 / 400             | `Path<u32>`                                        |
+| GET    | `/users/{user_id}/posts/{post_id}` | 200 / 400             | `Path<(u32, u32)>`                                 |
+| GET    | `/search?q=..&page=..&sort=..`     | 200 / 400             | `Query<SearchParams>` (required + `Option` fields) |
+| POST   | `/users`                           | 201 / 400 / 415 / 422 | `Json<UserInput>`                                  |
+| POST   | `/orders/{order_id}?priority=..`   | 200 / 400 / 422       | Order: Path → Query → Json (body last)             |
+| POST   | `/feedback`                        | 200 / 415 / 422       | `Form<Feedback>`                                   |
+| GET    | `/theme` · `/theme/{name}`         | 200                   | `Option<Path<String>>`                             |
+| POST   | `/optional-json`                   | 200 / 400             | `Option<Json<Greeting>>`                           |
+| POST   | `/strict-json`                     | 200 / 422             | `Result<Json<Greeting>, JsonRejection>`            |
+| GET    | `/headers`                         | 200                   | `HeaderMap`                                        |
+| POST   | `/echo-raw`                        | 200                   | `Bytes`                                            |
+| GET    | `/meta/route`                      | 200                   | `MatchedPath`                                      |
+| GET    | `/ip`                              | 200                   | `ConnectInfo<SocketAddr>`                          |
 
 ### Lesson 8 — the rest of the built-in kit
 
-| Method | Path | Extractor |
-|--------|------|-----------|
-| GET | `/all-params/{org}/{repo}` | `Path<HashMap<String, String>>` |
-| GET | `/repo-struct/{org}/{repo}` | `Path<struct>` (names map to fields) |
-| GET | `/raw-params/{org}/{repo}` | `RawPathParams` (no parsing) |
-| GET | `/query-map?a=1&b=2` | `Query<HashMap<String, String>>` |
-| GET | `/raw-query?anything` | `RawQuery` |
-| GET | `/uri-parts` | `Method`, `Uri`, `Version` |
-| GET | `/inner/where` | `NestedPath`, `OriginalUri`, `Uri` inside a nested router |
-| GET | `/extension` | `Extension<T>` and `Option<Extension<T>>` |
-| GET | `/typed-header` | `TypedHeader<UserAgent>` (axum-extra) |
-| POST | `/raw-form` | `RawForm` |
-| POST | `/whole-request` | `Request` |
+| Method | Path                        | Extractor                                                 |
+| ------ | --------------------------- | --------------------------------------------------------- |
+| GET    | `/all-params/{org}/{repo}`  | `Path<HashMap<String, String>>`                           |
+| GET    | `/repo-struct/{org}/{repo}` | `Path<struct>` (names map to fields)                      |
+| GET    | `/raw-params/{org}/{repo}`  | `RawPathParams` (no parsing)                              |
+| GET    | `/query-map?a=1&b=2`        | `Query<HashMap<String, String>>`                          |
+| GET    | `/raw-query?anything`       | `RawQuery`                                                |
+| GET    | `/uri-parts`                | `Method`, `Uri`, `Version`                                |
+| GET    | `/inner/where`              | `NestedPath`, `OriginalUri`, `Uri` inside a nested router |
+| GET    | `/extension`                | `Extension<T>` and `Option<Extension<T>>`                 |
+| GET    | `/typed-header`             | `TypedHeader<UserAgent>` (axum-extra)                     |
+| POST   | `/raw-form`                 | `RawForm`                                                 |
+| POST   | `/whole-request`            | `Request`                                                 |
 
 ### Lesson 9 — build your own
 
-| Method | Path | What you build |
-|--------|------|----------------|
-| GET | `/custom/api-key` | `ApiKey`: custom `FromRequestParts` (header `x-api-key: ak_xxxxxxxx`) |
-| GET | `/custom/api-key-optional` | `Option<ApiKey>` via `OptionalFromRequestParts` |
-| POST | `/custom/lines` | `PlainLines`: custom `FromRequest` reading a `text/plain` body |
-| GET | `/custom/client` | `ClientInfo`: composes `ConnectInfo` + a header |
+| Method | Path                       | What you build                                                        |
+| ------ | -------------------------- | --------------------------------------------------------------------- |
+| GET    | `/custom/api-key`          | `ApiKey`: custom `FromRequestParts` (header `x-api-key: ak_xxxxxxxx`) |
+| GET    | `/custom/api-key-optional` | `Option<ApiKey>` via `OptionalFromRequestParts`                       |
+| POST   | `/custom/lines`            | `PlainLines`: custom `FromRequest` reading a `text/plain` body        |
+| GET    | `/custom/client`           | `ClientInfo`: composes `ConnectInfo` + a header                       |
 
 ## Key Concepts
 
@@ -124,7 +124,7 @@ impl<S: Send + Sync> FromRequest<S> for PlainLines {
   `Path`, `Json`, `MatchedPath`, `Extension`, `TypedHeader`… and for your own types if you write the impl —
   **not** for `Query` (model optionality with `Option` fields or read `RawQuery`).
 - `Result<T, T::Rejection>` turns a rejection into an ordinary value you can log or re-emit.
-- Extractors compose: call other extractors *inside* yours (see `ClientInfo`).
+- Extractors compose: call other extractors _inside_ yours (see `ClientInfo`).
 
 ## Working Examples
 
@@ -188,6 +188,7 @@ curl -s  -H 'x-api-key: ak_12345678' $BASE/custom/api-key-optional
 curl -si -X POST -H 'content-type: text/plain' --data-binary $'one\ntwo\n\nthree' $BASE/custom/lines
 curl -si -X POST -H "$JSON" -d '{}' $BASE/custom/lines      # 415 from our own rejection
 curl -s  $BASE/custom/client
+xh -v :3005/custom/csv content-type:text/csv < data.csv     # csv
 ```
 
 ## Common Mistakes
