@@ -485,7 +485,16 @@ async fn route_info(path: MatchedPath) -> String {
 /// Why it matters: behind real deployments the direct IP is the *proxy's*
 /// (`X-Forwarded-For` rules, Module 32); but local services, admin APIs and
 /// rate limit keys still use it daily (Module 17).
-async fn client_ip(ConnectInfo(info): ConnectInfo<SocketAddr>) -> String {
+// async fn client_ip(ConnectInfo(info): ConnectInfo<SocketAddr>) -> String {
+//     format!(
+//         "client socket: {info}\n(behind a proxy this is the proxy — Module 32 covers headers)\n"
+//     )
+// }
+async fn client_ip(headers: HeaderMap, ConnectInfo(info): ConnectInfo<SocketAddr>) -> String {
+    let header_item = "X-Forwarded-For";
+    if headers.contains_key(header_item) {
+        return format!("{header_item} present.\n");
+    }
     format!(
         "client socket: {info}\n(behind a proxy this is the proxy — Module 32 covers headers)\n"
     )
