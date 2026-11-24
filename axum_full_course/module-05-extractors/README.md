@@ -196,6 +196,9 @@ xh :3005/custom/api-key x-api-key:a
 xh :3005/custom/api-key x-api-key:ak_12345
 xh :3005/custom/api-key authorization:a
 xh :3005/custom/api-key authorization:'Bearer ak_12345'
+
+# --- request id + csv body ---
+xh :3005/custom/req_id_csv x-request-id:12345 content-type:text/csv < data.csv
 ```
 
 ## Common Mistakes

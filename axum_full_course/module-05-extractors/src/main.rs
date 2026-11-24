@@ -123,7 +123,8 @@ async fn main() {
         .route("/multiply/{a}/{b}", get(multiply_path))
         .route("/typed-header-optional", get(option_typed_header_demo))
         .route("/custom/req-id", get(maybe_request_id))
-        .route("/custom/csv", post(csv_boy));
+        .route("/custom/csv", post(csv_body))
+        .route("/custom/req_id_csv", post(maybe_request_id_and_csv_body));
 
     let app = Router::new()
         .route("/", get(dashboard))
@@ -897,6 +898,19 @@ where
         }
     }
 }
+
+async fn maybe_request_id_and_csv_body(
+    id: Option<RequestId>,
+    CsvBody(csv): CsvBody,
+) -> Json<serde_json::Value> {
+    match id {
+        Some(RequestId(id)) => {
+            Json(serde_json::json!({"id": id, "line_count": csv.len(), "csv": csv }))
+        }
+        None => Json(serde_json::json!({"new id": rand::random::<u64>()})),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // 9b. Custom FromRequest — read the BODY (must be the last argument)
 // ---------------------------------------------------------------------------
@@ -1023,7 +1037,7 @@ where
 }
 
 /// POST /custom/lines — counts the lines of a text/plain body.
-async fn csv_boy(CsvBody(csv): CsvBody) -> Json<serde_json::Value> {
+async fn csv_body(CsvBody(csv): CsvBody) -> Json<serde_json::Value> {
     Json(serde_json::json!({ "line_count": csv.len(), "csv": csv }))
 }
 
