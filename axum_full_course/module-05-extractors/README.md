@@ -189,6 +189,13 @@ curl -si -X POST -H 'content-type: text/plain' --data-binary $'one\ntwo\n\nthree
 curl -si -X POST -H "$JSON" -d '{}' $BASE/custom/lines      # 415 from our own rejection
 curl -s  $BASE/custom/client
 xh -v :3005/custom/csv content-type:text/csv < data.csv     # csv
+
+# --- Api key test ---
+xh :3005/custom/api-key
+xh :3005/custom/api-key x-api-key:a
+xh :3005/custom/api-key x-api-key:ak_12345
+xh :3005/custom/api-key authorization:a
+xh :3005/custom/api-key authorization:'Bearer ak_12345'
 ```
 
 ## Common Mistakes

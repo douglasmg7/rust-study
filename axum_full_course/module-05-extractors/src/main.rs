@@ -699,22 +699,58 @@ struct ApiKey(String);
 /// Why it matters: a rejection is just an `IntoResponse` type; Module 08
 /// shows how to funnel these into one app-wide error.
 enum ApiKeyRejection {
-    Missing,
-    Malformed,
+    MalformedAPIKey,
+    MalformedAuthorization,
+    MissingAPIKeyAndAuthorization,
 }
 
 impl IntoResponse for ApiKeyRejection {
     fn into_response(self) -> Response {
         let (status, message) = match self {
-            ApiKeyRejection::Missing => (StatusCode::UNAUTHORIZED, "missing x-api-key header"),
-            ApiKeyRejection::Malformed => (
+            ApiKeyRejection::MissingAPIKeyAndAuthorization => (
+                StatusCode::UNAUTHORIZED,
+                "missing x-api-key and authorization header",
+            ),
+            ApiKeyRejection::MalformedAPIKey => (
                 StatusCode::BAD_REQUEST,
                 "x-api-key must look like ak_xxxxxxxx",
+            ),
+            ApiKeyRejection::MalformedAuthorization => (
+                StatusCode::BAD_REQUEST,
+                "Authorization must look like Bearer ak_xxxxxxxx",
             ),
         };
         (status, Json(serde_json::json!({ "error": message }))).into_response()
     }
 }
+
+// /// The extractor itself.
+// ///
+// /// What it does: reads `parts.headers`, checks the shape, returns the key.
+// /// Why it matters: `S` is the app state; `Send + Sync` is the only bound when
+// /// you do not use it. `&mut Parts` is why this trait cannot read the body.
+// impl<S> FromRequestParts<S> for ApiKey
+// where
+//     S: Send + Sync,
+// {
+//     type Rejection = ApiKeyRejection;
+//
+//     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+//         let value = parts
+//             .headers
+//             // Option<T> -> Some(T) or None
+//             .get("x-api-key")
+//             // Result<T, E> -> Ok(T) or Err(E) -> ? unwrap to Ok or Back to caller passing E.
+//             .ok_or(ApiKeyRejection::Missing)?
+//             .to_str()
+//             .map_err(|_| ApiKeyRejection::Malformed)?;
+//         if value.starts_with("ak_") && value.len() >= 8 {
+//             Ok(ApiKey(value.to_string()))
+//         } else {
+//             Err(ApiKeyRejection::Malformed)
+//         }
+//     }
+// }
 
 /// The extractor itself.
 ///
@@ -728,16 +764,36 @@ where
     type Rejection = ApiKeyRejection;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        let value = parts
-            .headers
-            .get("x-api-key")
-            .ok_or(ApiKeyRejection::Missing)?
-            .to_str()
-            .map_err(|_| ApiKeyRejection::Malformed)?;
-        if value.starts_with("ak_") && value.len() >= 8 {
-            Ok(ApiKey(value.to_string()))
-        } else {
-            Err(ApiKeyRejection::Malformed)
+        let try_authorization_bearer = || -> Result<Self, Self::Rejection> {
+            let autho = parts
+                .headers
+                .get("Authorization")
+                .ok_or(ApiKeyRejection::MissingAPIKeyAndAuthorization)?
+                .to_str()
+                .map_err(|_| ApiKeyRejection::MalformedAuthorization)?;
+            // println!("Authorization: {autho}");
+            if autho.starts_with("Bearer ak_") && autho.len() >= 8 {
+                Ok(ApiKey(autho.to_string()))
+            } else {
+                Err(ApiKeyRejection::MalformedAuthorization)
+            }
+        };
+
+        // Try api key.
+        match parts.headers.get("x-api-key") {
+            // Api key.
+            Some(api_key) => {
+                let api_key = api_key
+                    .to_str()
+                    .map_err(|_| ApiKeyRejection::MalformedAPIKey)?;
+                if api_key.starts_with("ak_") && api_key.len() >= 8 {
+                    Ok(ApiKey(api_key.to_string()))
+                } else {
+                    Err(ApiKeyRejection::MalformedAPIKey)
+                }
+            }
+            // Try autho key.
+            None => return try_authorization_bearer(),
         }
     }
 }
