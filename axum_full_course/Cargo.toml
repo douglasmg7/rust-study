@@ -9,7 +9,7 @@ members = [
     "module-03-handlers-responses",
     "module-04-routing",
     "module-05-extractors",
-    # "module-06-responses",
+    "module-06-responses",
     # "module-07-state",
     # "module-08-errors",
     # "module-09-validation",
@@ -61,7 +61,7 @@ members = [
 # --- The Axum stack, pinned to the verified axum v0.8.9 release set (2026). ---
 # The web framework this course is about. Path syntax is `/{id}` and
 # `/{*rest}`; handlers and services must be `Sync`. MSRV is Rust 1.80.
-axum = "0.8.9"
+axum = { version = "0.8.9", features = ["macros"]}
 # The async runtime. Axum is built on Tokio: `#[tokio::main]`, TcpListener,
 # spawn, channels and timers all come from here.
 tokio = { version = "1.54", features = ["full"] }
