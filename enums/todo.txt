@@ -1,0 +1,17 @@
+unwrap_or_else
+ok_or
+err_or
+?
+map_err
+
+?
+When you append ? to a Result value, Rust performs two actions depending on the variant:
+• On Ok(val). It unwraps val and assigns it to your variable or passes it to the next expression, allowing the function to continue running.
+• On Err(e). It immediately exits the current function and returns Err(e) to the calling code. It also automatically converts the error type using the From trait if the function's return error type differs from the expression's error type.
+
+
+Convert Result to Option
+ok(), 
+
+Convert Option to Result
+ok_or(e), ok_or_else(|| f(x))
